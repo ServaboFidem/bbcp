@@ -76,12 +76,18 @@ extern bbcp_System bbcp_OS;
   
 int bbcp_FS_Unix::Applicable(const char *path)
 {
-// Duplicate the path and only consider the first component (mount point)
+// Duplicate the path and only consider the first component (mount point).
+// Only remember it once it is known to be valid: a bare relative target such
+// as "newfile" does not exist yet, and caching it would make the caller's
+// fallback probe of "." fail too ("not in a known file system").
 //
+   char *cand = 0;
+   const char *tpath = fs_path;
    if (!fs_path)
       {char *slash;
-       fs_path = strdup(path);
-       if ((slash = index(fs_path+1, '/'))) *slash = 0;
+       cand = strdup(path);
+       if ((slash = index(cand+1, '/'))) *slash = 0;
+       tpath = cand;
       }
 
 // FREEBSD doesn't have a statvfs, so we punt
@@ -94,7 +100,7 @@ int bbcp_FS_Unix::Applicable(const char *path)
 // To find out whether or not we are applicable, simply do a statvfs on the
 // incomming path. If we can do it, then we are a unix filesystem.
 //
-   if (statvfs(fs_path, &buf)) return 0;
+   if (statvfs(tpath, &buf)) {if (cand) free(cand); return 0;}
 
 // Set the sector size
 //
@@ -105,6 +111,7 @@ int bbcp_FS_Unix::Applicable(const char *path)
    memcpy((void *)&fs_id, (const void *)&buf.f_fsid, sizeof(fs_id));
 #endif
 
+   if (cand) fs_path = cand;
    return 1;
 }
 
