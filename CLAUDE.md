@@ -51,6 +51,14 @@ $B -v -s 4 -E c32c -S "$B -S" -T "$B -T" /tmp/src.bin /tmp/dst.bin && cmp /tmp/s
 
 The expected warnings are `-Wregister` in `bbcp_MD5_openssl.C` and OpenSSL 3 MD5 deprecations.
 
+## Releases
+
+The workflow is `.github/workflows/linux-release.yml`:
+- It runs on every push or PR to `origin`. It builds and smoke-tests on `ubuntu-22.04` (x86_64) and `ubuntu-22.04-arm` (arm64), and uploads `bbcp-<ver>-linux-<arch>.tar.gz` plus a `.sha256` file as artifacts.
+- Pushing a `v*` tag (for example `v17.12.00.00.0`) also publishes a GitHub Release with those archives.
+- It builds on 22.04 because the resulting binaries need glibc 2.35+ and libcrypto.so.3; building on 22.04 keeps them working on Ubuntu 22.04 and newer.
+- `DEST_SYSNAME=linux-<arch>` is set because `MakeSname` labels arm64 as `i386_linux`.
+
 ## Fork-specific changes (keep when merging upstream)
 
 - **`uname -m`, not `uname -i`, in the `Linux` target.** Upstream uses `uname -i`, which prints `unknown` on Debian/Ubuntu.

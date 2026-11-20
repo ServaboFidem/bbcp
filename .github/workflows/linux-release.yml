@@ -1,0 +1,99 @@
+name: Linux build & release
+
+# Every push / PR: build + smoke-test on x86_64 and arm64, upload artifacts.
+# Pushing a tag like v17.12.00.00.0 additionally publishes a GitHub Release.
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Build on the oldest supported Ubuntu so the glibc dependency
+          # (2.35) runs on 22.04 and everything newer.
+          - runner: ubuntu-22.04
+            arch: x86_64
+          - runner: ubuntu-22.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential libssl-dev zlib1g-dev
+
+      - name: Build
+        working-directory: src
+        env:
+          # MakeSname mislabels non-x86 Linux as i386; pin the output dir name.
+          DEST_SYSNAME: linux-${{ matrix.arch }}
+        run: make -j"$(nproc)"
+
+      - name: Smoke test (local copy, 4 streams, CRC32c)
+        run: |
+          B="$PWD/bin/linux-${{ matrix.arch }}/bbcp"
+          file "$B"
+          "$B" -#
+          head -c 50000000 /dev/urandom > /tmp/src.bin
+          "$B" -v -s 4 -E c32c -S "$B -S" -T "$B -T" /tmp/src.bin /tmp/dst.bin
+          cmp /tmp/src.bin /tmp/dst.bin
+          echo "copy verified"
+
+      - name: Package
+        id: pkg
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VER="${GITHUB_REF_NAME#v}"
+          else
+            VER="$(bin/linux-${{ matrix.arch }}/bbcp -# | head -1)-g${GITHUB_SHA::7}"
+          fi
+          NAME="bbcp-${VER}-linux-${{ matrix.arch }}"
+          mkdir -p "dist/$NAME"
+          cp "bin/linux-${{ matrix.arch }}/bbcp" "dist/$NAME/"
+          strip "dist/$NAME/bbcp"
+          cp README.md src/COPYING.LESSER "dist/$NAME/"
+          tar -C dist -czf "dist/$NAME.tar.gz" "$NAME"
+          (cd dist && sha256sum "$NAME.tar.gz" > "$NAME.tar.gz.sha256")
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.pkg.outputs.name }}
+          path: |
+            dist/*.tar.gz
+            dist/*.sha256
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "bbcp ${GITHUB_REF_NAME#v}" \
+            --notes "Linux binaries for Ubuntu 22.04+ (glibc 2.35+, OpenSSL 3). Requires bbcp on both ends of a transfer." \
+            --verify-tag
