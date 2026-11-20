@@ -1,34 +1,61 @@
 bbcp
 ====
 
-Securely and quickly copy data from source to target.
+Securely and quickly copy data from source to target, using parallel TCP streams.
 
-This is the **OFFCIAL** bbcp repository based on the one previously located at https://github.com/bbcp/bbcp.git which no longer exists.
+### About this fork
 
-Currently, we do not supply binaries. However, it is trivial to build them yourself:
+This repository is a fork of [eeertekin/bbcp](https://github.com/eeertekin/bbcp). For many years that was the only well-maintained bbcp fork on GitHub.
 
-1) Optionally, create a top level directory such as "bbccp.git" and cd into it.
-2) Execute git clone https://github.com/bbcp/bbcp.git
-3) cd into "bbcp/src"
-4) make
+It has now been updated to the current official upstream, [bbcp/bbcp](https://github.com/bbcp/bbcp) (version 17.12.00.00.0). That brings in all upstream work since 2014:
+- new options `-A`, `-@`, `-~`, `-+`, `-^` and `--omit-*`
+- `c32z` and `c32c` checksums
+- automatic IPv4 fallback when the IPv6 stack is broken
+- an aarch64 build target
+- the full manual in `doc/`
 
-The executable will appear in the parent directy under the bin/_platform_directory_.
+This fork also carries patches that make bbcp build cleanly and work correctly on current Ubuntu releases:
 
-So, for instance on almalinux8, it would be "bin/amd64_linux/bbcp"
+| Patch | Why |
+|---|---|
+| Linux build target chosen with `uname -m` instead of `uname -i` | `uname -i` prints `unknown` on Debian/Ubuntu, which breaks `make` |
+| `noexcept(false)` instead of `throw(std::exception)` | C++17, GCC's default, rejects dynamic exception specifications |
+| Drop `-lnsl` from the Linux link flags | glibc 2.32+ no longer ships libnsl, and bbcp doesn't need it |
+| Allow hostnames up to 253 characters (was 64) | Copies failed on hosts with long fully qualified names, such as cloud VMs |
+| Fix copies to a bare relative target (`bbcp f dst`) | An upstream regression failed these with "not in a known file system" |
+
+The fork also adds GitHub Actions CI. Every change is built and smoke-tested on x86_64 and arm64, and tagged versions are published as binary releases.
 
 ### Installation
 
-Debian / Ubuntu
+**Prebuilt binaries** (Ubuntu 22.04 and newer, x86_64 or arm64) are on the [Releases](https://github.com/ServaboFidem/bbcp/releases) page:
 
 ```sh
-apt-get update
-apt-get install libssl-dev build-essential zlib1g-dev git
-git clone https://github.com/bbcp/bbcp.git
-cd bbcp/src
-make
-cp ../bin/amd64_linux/bbcp /bin/bbcp
+VER=17.12.00.00.0-2                                   # see Releases for the latest
+ARCH=$(uname -m | sed 's/aarch64/arm64/')
+curl -LO https://github.com/ServaboFidem/bbcp/releases/download/v$VER/bbcp-$VER-linux-$ARCH.tar.gz
+tar xzf bbcp-$VER-linux-$ARCH.tar.gz
+sudo install -m 755 bbcp-$VER-linux-$ARCH/bbcp /usr/local/bin/bbcp
 bbcp --version
 ```
+
+Each archive has a matching `.sha256` file, which you can check with `sha256sum -c`.
+
+bbcp must be installed on **both** ends of a transfer, in a directory on the remote user's non-interactive `PATH`. Alternatively, point to it with `-S` and `-T`.
+
+**Build from source** (Debian/Ubuntu):
+
+```sh
+sudo apt-get update
+sudo apt-get install build-essential libssl-dev zlib1g-dev git
+git clone https://github.com/ServaboFidem/bbcp.git
+cd bbcp/src
+make -j"$(nproc)"
+sudo install -m 755 ../bin/*/bbcp /usr/local/bin/bbcp
+bbcp --version
+```
+
+The binary is written to `bin/<platform>/bbcp`, for example `bin/amd64_linux/bbcp`.
 
 ### Examples
 ```sh
@@ -120,4 +147,14 @@ Output of `bbcp -h`. The full manual is in `doc/` (`bbcp.pdf`, `bbcp.htm`).
     Outspec the name of the target file or directory (required if >1 input file.)
     ******* Complete details at: http://www.slac.stanford.edu/~abh/bbcp
 
-######Forked from http://www.slac.stanford.edu/~abh/bbcp/bbcp.git/
+### Credits and license
+
+bbcp was written by Andrew Hanushevsky at SLAC National Accelerator Laboratory, Stanford University.
+
+Lineage of this repository:
+- SLAC's original repository (http://www.slac.stanford.edu/~abh/bbcp/bbcp.git/)
+- [eeertekin/bbcp](https://github.com/eeertekin/bbcp)
+- merged with the official [bbcp/bbcp](https://github.com/bbcp/bbcp)
+- this fork
+
+bbcp is licensed under the GNU LGPL v3 or later; see `src/COPYING.LESSER`. `LICENSE` contains the GNU GPL v3 text that the LGPL incorporates.
