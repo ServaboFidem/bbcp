@@ -57,12 +57,18 @@ The expected warnings are `-Wregister` in `bbcp_MD5_openssl.C` and OpenSSL 3 MD5
 - **No `-lnsl` in `LNXLIBS*`.** glibc 2.32+ no longer ships it, and bbcp uses no NIS/RPC symbols.
 - **`~bbcp_Semaphore() noexcept(false)` in `bbcp_Pthread.h`.** Upstream's `throw(std::exception)` does not compile under C++17, which is GCC's default.
 
+Remotes:
+- `origin` is the fork (ServaboFidem/bbcp). All pushes go here.
+- `upstream` is https://github.com/bbcp/bbcp. It is fetch-only; its push URL is deliberately invalid.
+
 To pull new upstream work:
 
 ```sh
-git fetch https://github.com/bbcp/bbcp.git '+refs/heads/*:refs/remotes/upstream-bbcp/*'
-git merge upstream-bbcp/master
+git fetch upstream
+git merge upstream/master
 ```
+
+On GitHub, this fork is still listed as a fork of the dead `eeertekin/bbcp`. Do not open PRs against that repo.
 
 ## Architecture
 
