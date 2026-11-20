@@ -158,7 +158,7 @@ inline void Wait() {int rc;
   bbcp_Semaphore(int semval=1) {if (sem_init(&h_semaphore, 0, semval))
                                    {throw "sem_init() failed", errno;}
                                }
- ~bbcp_Semaphore() throw(std::exception) {if (sem_destroy(&h_semaphore))
+ ~bbcp_Semaphore() noexcept(false) {if (sem_destroy(&h_semaphore))
                        {throw "sem_destroy() failed", errno;}
                    }
 
