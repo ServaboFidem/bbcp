@@ -51,18 +51,33 @@ $B -v -s 4 -E c32c -S "$B -S" -T "$B -T" /tmp/src.bin /tmp/dst.bin && cmp /tmp/s
 
 The expected warnings are `-Wregister` in `bbcp_MD5_openssl.C` and OpenSSL 3 MD5 deprecations.
 
+## Releases
+
+The workflow is `.github/workflows/linux-release.yml`:
+- It runs on every push or PR to `origin`. It builds and smoke-tests on `ubuntu-22.04` (x86_64) and `ubuntu-22.04-arm` (arm64), and uploads `bbcp-<ver>-linux-<arch>.tar.gz` plus a `.sha256` file as artifacts.
+- Pushing a `v*` tag (for example `v17.12.00.00.0`) also publishes a GitHub Release with those archives.
+- It builds on 22.04 because the resulting binaries need glibc 2.35+ and libcrypto.so.3; building on 22.04 keeps them working on Ubuntu 22.04 and newer.
+- `DEST_SYSNAME=linux-<arch>` is set because `MakeSname` labels arm64 as `i386_linux`.
+
 ## Fork-specific changes (keep when merging upstream)
 
 - **`uname -m`, not `uname -i`, in the `Linux` target.** Upstream uses `uname -i`, which prints `unknown` on Debian/Ubuntu.
 - **No `-lnsl` in `LNXLIBS*`.** glibc 2.32+ no longer ships it, and bbcp uses no NIS/RPC symbols.
+- **Hostnames up to 253 chars.** Upstream sizes the callback-host buffer in `bbcp_Config.C` and the `host:port` check in `bbcp_NetAddr.C` by `MAXHOSTNAMELEN` (64). That limit is for a single host name, not a full domain name, and the copy fails on cloud hosts whose FQDN is longer than 64 characters, such as GitHub runners.
 - **`~bbcp_Semaphore() noexcept(false)` in `bbcp_Pthread.h`.** Upstream's `throw(std::exception)` does not compile under C++17, which is GCC's default.
+
+Remotes:
+- `origin` is the fork (ServaboFidem/bbcp). All pushes go here.
+- `upstream` is https://github.com/bbcp/bbcp. It is fetch-only; its push URL is deliberately invalid.
 
 To pull new upstream work:
 
 ```sh
-git fetch https://github.com/bbcp/bbcp.git '+refs/heads/*:refs/remotes/upstream-bbcp/*'
-git merge upstream-bbcp/master
+git fetch upstream
+git merge upstream/master
 ```
+
+On GitHub, this fork is still listed as a fork of the dead `eeertekin/bbcp`. Do not open PRs against that repo.
 
 ## Architecture
 
