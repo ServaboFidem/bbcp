@@ -49,6 +49,8 @@ jobs:
           head -c 50000000 /dev/urandom > /tmp/src.bin
           "$B" -v -s 4 -E c32c -S "$B -S" -T "$B -T" /tmp/src.bin /tmp/dst.bin
           cmp /tmp/src.bin /tmp/dst.bin
+          # Bare relative target (regression: "not in a known file system").
+          (cd /tmp && "$B" -S "$B -S" -T "$B -T" src.bin dst2.bin && cmp src.bin dst2.bin)
           echo "copy verified"
 
       - name: Package
