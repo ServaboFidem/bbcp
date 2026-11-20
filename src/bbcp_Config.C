@@ -250,7 +250,7 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
    bbcp_FileSpec *lfsp;
    int n, retc, xTrace = 1, infiles = 0, notctl = 0, rwbsz = 0;
    int mspec = 0, isProg = 0;
-   char *Slash, *inFN=0, c, cbhname[MAXHOSTNAMELEN+1];
+   char *Slash, *inFN=0, c, cbhname[256]; // FQDNs may be up to 253 chars; MAXHOSTNAMELEN (64) is too small
    bbcp_Args arglist((char *)"bbcp: ");
    bool warnIPV = false;
 

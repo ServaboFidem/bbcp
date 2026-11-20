@@ -260,7 +260,7 @@ const char *bbcp_NetAddr::Set(const char *hSpec, int pNum)
    else    {struct addrinfo *rP = 0;
             if ((Colon = index(hSpec, ':')))
                {aLen = Colon - hSpec;
-                if (aLen > MAXHOSTNAMELEN) return badName;
+                if (aLen >= NI_MAXHOST) return badName;
                 strncpy(aBuff, hSpec, aLen); aBuff[aLen] = 0; iP = aBuff;
                } else iP = hSpec;
             n = getaddrinfo(iP, 0, hostHints, &rP);

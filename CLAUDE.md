@@ -63,6 +63,7 @@ The workflow is `.github/workflows/linux-release.yml`:
 
 - **`uname -m`, not `uname -i`, in the `Linux` target.** Upstream uses `uname -i`, which prints `unknown` on Debian/Ubuntu.
 - **No `-lnsl` in `LNXLIBS*`.** glibc 2.32+ no longer ships it, and bbcp uses no NIS/RPC symbols.
+- **Hostnames up to 253 chars.** Upstream sizes the callback-host buffer in `bbcp_Config.C` and the `host:port` check in `bbcp_NetAddr.C` by `MAXHOSTNAMELEN` (64). That limit is for a single host name, not a full domain name, and the copy fails on cloud hosts whose FQDN is longer than 64 characters, such as GitHub runners.
 - **`~bbcp_Semaphore() noexcept(false)` in `bbcp_Pthread.h`.** Upstream's `throw(std::exception)` does not compile under C++17, which is GCC's default.
 
 Remotes:
