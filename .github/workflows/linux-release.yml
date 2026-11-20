@@ -92,8 +92,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/* \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "bbcp ${GITHUB_REF_NAME#v}" \
-            --notes "Linux binaries for Ubuntu 22.04+ (glibc 2.35+, OpenSSL 3). Requires bbcp on both ends of a transfer." \
-            --verify-tag
+          # Refuse to publish if the tag was moved after this run's build started.
+          TAG_SHA="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_REF_NAME" --jq .sha)"
+          if [ "$TAG_SHA" != "$GITHUB_SHA" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME now points to $TAG_SHA, but artifacts were built from $GITHUB_SHA. Aborting."
+            exit 1
+          fi
+
+          # Create the release, or on a rerun repair/replace its assets.
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "bbcp ${GITHUB_REF_NAME#v}" \
+              --notes "Linux binaries for Ubuntu 22.04+ (glibc 2.35+, OpenSSL 3). Requires bbcp on both ends of a transfer." \
+              --verify-tag
+          fi
