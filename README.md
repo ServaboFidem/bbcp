@@ -3,14 +3,27 @@ bbcp
 
 Securely and quickly copy data from source to target.
 
+This is the **OFFCIAL** bbcp repository based on the one previously located at https://github.com/bbcp/bbcp.git which no longer exists.
+
+Currently, we do not supply binaries. However, it is trivial to build them yourself:
+
+1) Optionally, create a top level directory such as "bbccp.git" and cd into it.
+2) Execute git clone https://github.com/bbcp/bbcp.git
+3) cd into "bbcp/src"
+4) make
+
+The executable will appear in the parent directy under the bin/_platform_directory_.
+
+So, for instance on almalinux8, it would be "bin/amd64_linux/bbcp"
+
 ### Installation
 
-Ubuntu 12.04 LTS
+Debian / Ubuntu
 
 ```sh
 apt-get update
 apt-get install libssl-dev build-essential zlib1g-dev git
-git clone https://github.com/eeertekin/bbcp.git
+git clone https://github.com/bbcp/bbcp.git
 cd bbcp/src
 make
 cp ../bin/amd64_linux/bbcp /bin/bbcp
@@ -30,20 +43,19 @@ bbcp --version
 
 ### Usage
 
-    bbcp [Options] [Inspec] Outspec
+Output of `bbcp -h`. The full manual is in `doc/` (`bbcp.pdf`, `bbcp.htm`).
 
-    Options: [-a [dir]] [-b [+]bf] [-B bsz] [-c [lvl]] [-C cfn] [-D] [-d path]
-         [-e] [-E csa] [-f] [-F] [-h] [-i idfn] [-I slfn] [-k] [-K]
-         [-L opts[@logurl]] [-l logf] [-m mode] [-n] [-N nio] [-o] [-O] [-p]
-         [-P sec] [-r] [-R [args]] [-q qos] [-s snum] [-S srcxeq] [-T trgxeq]
-         [-t sec] [-v] [-V] [-u loc] [-U wsz] [-w [=]wsz] [-x rate] [-y] [-z]
-         [-Z pnf[:pnl]] [-4 [loc]] [-$] [-#] [--]
-
+    Usage:   bbcp [Options] [Inspec] Outspec
+    Options: [-a [dir]] [-A] [-b [+]bf] [-B bsz] [-c [lvl]] [-C cfn] [-D] [-d path]
+             [-e] [-E csa] [-f] [-F] [-g] [-h] [-i idfn] [-I slfn] [-k] [-K]
+             [-L opts[@logurl]] [-l logf] [-m mode] [-n] [-N nio] [-o] [-O] [-p]
+             [-P sec] [-r] [-R [args]] [-q qos] [-s snum] [-S srcxeq] [-T trgxeq]
+             [-t sec] [-v] [-V] [-u loc] [-U wsz] [-w [=]wsz] [-x rate] [-y] [-z]
+             [-Z pnf[:pnl]] [-4 [loc]] [-~] [-@ {copy|follow|ignore}] [-$] [-#] [--]
     I/Ospec: [user@][host:]file
-
     Function: Secure and fast copy utility.
-    
     -a dir  append mode to restart a previously failed copy.
+    -A      automatically create destination directory if it does not exist.
     -b bf   sets the read blocking factor (default is 1).
     -b +bf  adds additional output buffers to mitigate ordering stalls.
     -B bsz  sets the read/write I/O buffer size (default is wsz).
@@ -53,7 +65,7 @@ bbcp --version
     -D      turns on debugging.
     -e      error check data for transmission errors using md5 checksum.
     -E csa  specify checksum alorithm and optionally report or verify checksum.
-            csa: [%]{a32|c32|md5}[=[<value> | <outfile>]]
+            csa: [%]{a32|c32|md5|c32z|c32c}[=[<value> | <outfile>]]
     -f      forces the copy by first unlinking the target file before copying.
     -F      does not check to see if there is enough space on the target node.
     -h      print help information.
@@ -92,20 +104,20 @@ bbcp --version
             When what is 'dd' then the file and directory are fsynced.
     -z      use reverse connection protocol (i.e., target to source).
     -Z      use port range pn1:pn2 for accepting data transfer connections.
+    -+      for recursive copies only copy readable/searchable items.
     -4      use only IPV4 stack; optionally, at specified location.
+    -~      preserve atime and mtime only.
+    -@      specifies how symbolic links are handled: copy recreates the symlink,
+            follow copies the symlink target, and ignore skips it (default).
     -$      print the license and exit.
     -#      print the version and exit.
+    -^      omit copying empty directories (same as --omit-emptydirs).
     --      allows an option with a defaulted optional arg to appear last.
-    
     user    the user under which the copy is to be performed. The default is
             to use the current login name.
     host    the location of the file. The default is to use the current host.
     Inspec  the name of the source file(s) (also see -I).
-    Outspec the name of the target file or directory (required if >1 input file.
-    
+    Outspec the name of the target file or directory (required if >1 input file.)
     ******* Complete details at: http://www.slac.stanford.edu/~abh/bbcp
-
-
-
 
 ######Forked from http://www.slac.stanford.edu/~abh/bbcp/bbcp.git/
